@@ -228,7 +228,7 @@ export default function FactorialRoiCalculator() {
             hint="Tool consolidation, error reduction, avoided fines, reduced overtime, etc."
           />
           {/* ✅ This helper exists below */}
-          <PresetRow preset={preset} onChange={applyPreset} />
+       
         </div>
 
         {/* Card 3 */}
@@ -563,3 +563,4 @@ function escapeCsv(v: string) {
   const s = String(v ?? "");
   return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
+fix: remove PresetRow
