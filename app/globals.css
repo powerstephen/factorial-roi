@@ -4,8 +4,8 @@
 
 /* Brand variables */
 :root {
-  --brand-primary: #E51943;
-  --brand-secondary: #009698;
+  --brand-primary: #E51943;   /* Factorial red */
+  --brand-secondary: #009698; /* Viridian-like green */
 }
 
 @layer components {
