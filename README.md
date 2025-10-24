@@ -1,13 +1,22 @@
-# Factorial ROI Calculator
+# 🧮 Factorial ROI Calculator
 
-A Next.js app (App Router) styled with Tailwind + Fira Sans and a Factorial-inspired palette.
+A lightweight ROI calculator built with **Next.js (App Router)**, **Tailwind CSS**, and **Recharts**, styled in **Factorial’s palette** and **Fira Sans** typography.
 
-## Brand
-- Primary: #E51943 (Radical Red)
-- Secondary: #009698 (Viridian Green)
-- Font: Fira Sans (loaded via next/font)
+It estimates savings, ROI, and payback when implementing [Factorial HR](https://factorialhr.com/) across your organisation.
 
-## Dev
-```bash
-npm i
-npm run dev
+---
+
+## 🚀 Features
+
+- Factorial-style theme (Radical Red `#E51943` + Viridian Green `#009698`)
+- Responsive layout, Fira Sans font
+- Adjustable assumptions (team size, pricing, HR/manager time, etc.)
+- ROI, annual savings, payback period
+- Bar-chart visualisation
+- CSV export
+- Works entirely client-side (no backend)
+
+---
+
+## 🧩 Folder Structure
+
