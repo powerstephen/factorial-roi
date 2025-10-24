@@ -1,18 +1,20 @@
-import React, { useMemo, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
-import { Info } from "lucide-react";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+"use client";
 
-// Helper: currency formatting
-const fmt = (n: number, currency: string) => new Intl.NumberFormat(undefined, { style: "currency", currency }).format(n);
+import { useMemo, useState } from "react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
 
-// Presets for quick scenario planning
+// currency formatter
+const fmt = (n: number, currency: string) =>
+  new Intl.NumberFormat(undefined, { style: "currency", currency }).format(n);
+
+// Presets
 const PRESETS = {
   conservative: {
     minutesSavedPerEmployeePerMonth: 20,
@@ -27,230 +29,337 @@ const PRESETS = {
     managerHoursSavedPerMonth: 4,
   },
 } as const;
-
 type PresetKey = keyof typeof PRESETS;
 
 export default function FactorialRoiCalculator() {
   const [currency, setCurrency] = useState<string>("EUR");
   const [employees, setEmployees] = useState<number>(150);
   const [pricePerEmployee, setPricePerEmployee] = useState<number>(8); // monthly price per employee
+  const [oneTimeImplementation, setOneTimeImplementation] = useState<number>(0);
+
   const [hrHourly, setHrHourly] = useState<number>(35);
+  const [minutesSavedPerEmployeePerMonth, setMinutesSavedPerEmployeePerMonth] =
+    useState<number>(PRESETS.base.minutesSavedPerEmployeePerMonth);
+
   const [managersEnabled, setManagersEnabled] = useState<boolean>(true);
   const [managerCount, setManagerCount] = useState<number>(12);
   const [managerHourly, setManagerHourly] = useState<number>(45);
-  const [minutesSavedPerEmployeePerMonth, setMinutesSavedPerEmployeePerMonth] = useState<number>(PRESETS.base.minutesSavedPerEmployeePerMonth);
-  const [managerHoursSavedPerMonth, setManagerHoursSavedPerMonth] = useState<number>(PRESETS.base.managerHoursSavedPerMonth);
-  const [otherSavingsMonthly, setOtherSavingsMonthly] = useState<number>(600); // tool consolidation, error reduction, compliance, etc.
-  const [oneTimeImplementation, setOneTimeImplementation] = useState<number>(0);
-  const [applyPreset, setApplyPreset] = useState<PresetKey>("base");
+  const [managerHoursSavedPerMonth, setManagerHoursSavedPerMonth] =
+    useState<number>(PRESETS.base.managerHoursSavedPerMonth);
 
-  // Derived calculations
-  const monthlySoftwareCost = useMemo(() => employees * pricePerEmployee, [employees, pricePerEmployee]);
-  const annualSoftwareCost = useMemo(() => monthlySoftwareCost * 12, [monthlySoftwareCost]);
-  const annualTotalCostY1 = useMemo(() => annualSoftwareCost + oneTimeImplementation, [annualSoftwareCost, oneTimeImplementation]);
+  const [otherSavingsMonthly, setOtherSavingsMonthly] = useState<number>(600); // tool consolidation, errors, compliance, etc.
+  const [preset, setPreset] = useState<PresetKey>("base");
 
-  const adminHoursSavedPerMonth = useMemo(() => (minutesSavedPerEmployeePerMonth / 60) * employees, [minutesSavedPerEmployeePerMonth, employees]);
-  const adminSavingsMonthly = useMemo(() => adminHoursSavedPerMonth * hrHourly, [adminHoursSavedPerMonth, hrHourly]);
+  // Derived
+  const monthlySoftwareCost = useMemo(
+    () => employees * pricePerEmployee,
+    [employees, pricePerEmployee]
+  );
+  const annualSoftwareCost = useMemo(
+    () => monthlySoftwareCost * 12,
+    [monthlySoftwareCost]
+  );
+  const annualTotalCostY1 = useMemo(
+    () => annualSoftwareCost + oneTimeImplementation,
+    [annualSoftwareCost, oneTimeImplementation]
+  );
 
-  const managerSavingsMonthly = useMemo(() => (managersEnabled ? managerCount * managerHoursSavedPerMonth * managerHourly : 0), [managersEnabled, managerCount, managerHoursSavedPerMonth, managerHourly]);
+  const adminHoursSavedPerMonth = useMemo(
+    () => (minutesSavedPerEmployeePerMonth / 60) * employees,
+    [minutesSavedPerEmployeePerMonth, employees]
+  );
+  const adminSavingsMonthly = useMemo(
+    () => adminHoursSavedPerMonth * hrHourly,
+    [adminHoursSavedPerMonth, hrHourly]
+  );
 
-  const totalSavingsMonthly = useMemo(() => adminSavingsMonthly + managerSavingsMonthly + otherSavingsMonthly, [adminSavingsMonthly, managerSavingsMonthly, otherSavingsMonthly]);
-  const totalSavingsAnnual = useMemo(() => totalSavingsMonthly * 12, [totalSavingsMonthly]);
+  const managerSavingsMonthly = useMemo(
+    () =>
+      managersEnabled
+        ? managerCount * managerHoursSavedPerMonth * managerHourly
+        : 0,
+    [managersEnabled, managerCount, managerHoursSavedPerMonth, managerHourly]
+  );
 
-  const netBenefitY1 = useMemo(() => totalSavingsAnnual - annualTotalCostY1, [totalSavingsAnnual, annualTotalCostY1]);
-  const netBenefitY2Plus = useMemo(() => totalSavingsAnnual - annualSoftwareCost, [totalSavingsAnnual, annualSoftwareCost]);
+  const totalSavingsMonthly = useMemo(
+    () => adminSavingsMonthly + managerSavingsMonthly + otherSavingsMonthly,
+    [adminSavingsMonthly, managerSavingsMonthly, otherSavingsMonthly]
+  );
+  const totalSavingsAnnual = useMemo(
+    () => totalSavingsMonthly * 12,
+    [totalSavingsMonthly]
+  );
 
-  const roiY1 = useMemo(() => (annualTotalCostY1 === 0 ? 0 : (netBenefitY1 / annualTotalCostY1) * 100), [netBenefitY1, annualTotalCostY1]);
-  const roiY2Plus = useMemo(() => (annualSoftwareCost === 0 ? 0 : (netBenefitY2Plus / annualSoftwareCost) * 100), [netBenefitY2Plus, annualSoftwareCost]);
+  const netBenefitY1 = useMemo(
+    () => totalSavingsAnnual - annualTotalCostY1,
+    [totalSavingsAnnual, annualTotalCostY1]
+  );
+  const netBenefitY2Plus = useMemo(
+    () => totalSavingsAnnual - annualSoftwareCost,
+    [totalSavingsAnnual, annualSoftwareCost]
+  );
 
-  // Payback period in months using monthly view and including one-time cost
-  const monthlyCostIncludingOneTimeSpread = useMemo(() => monthlySoftwareCost, [monthlySoftwareCost]);
+  const roiY1 = useMemo(
+    () => (annualTotalCostY1 === 0 ? 0 : (netBenefitY1 / annualTotalCostY1) * 100),
+    [netBenefitY1, annualTotalCostY1]
+  );
+  const roiY2Plus = useMemo(
+    () => (annualSoftwareCost === 0 ? 0 : (netBenefitY2Plus / annualSoftwareCost) * 100),
+    [netBenefitY2Plus, annualSoftwareCost]
+  );
+
+  // Payback months (using monthly view; one-time cost recovered from monthly net)
   const paybackMonths = useMemo(() => {
-    const monthlyNet = totalSavingsMonthly - monthlyCostIncludingOneTimeSpread;
+    const monthlyNet = totalSavingsMonthly - monthlySoftwareCost;
     if (monthlyNet <= 0) return Infinity;
-    // months to recover one-time cost
-    const monthsForOneTime = oneTimeImplementation / monthlyNet;
-    return monthsForOneTime;
-  }, [totalSavingsMonthly, monthlyCostIncludingOneTimeSpread, oneTimeImplementation]);
+    return oneTimeImplementation > 0
+      ? oneTimeImplementation / monthlyNet
+      : 12 * (annualSoftwareCost / totalSavingsAnnual); // fallback heuristic if no one-time cost
+  }, [
+    totalSavingsMonthly,
+    monthlySoftwareCost,
+    oneTimeImplementation,
+    annualSoftwareCost,
+    totalSavingsAnnual,
+  ]);
 
-  const chartData = useMemo(() => (
-    [
+  const chartData = useMemo(
+    () => [
       { name: "Annual Savings", value: totalSavingsAnnual },
       { name: "Annual Cost (Y1)", value: annualTotalCostY1 },
       { name: "Annual Cost (Y2+)", value: annualSoftwareCost },
-    ]
-  ), [totalSavingsAnnual, annualTotalCostY1, annualSoftwareCost]);
+    ],
+    [totalSavingsAnnual, annualTotalCostY1, annualSoftwareCost]
+  );
 
-  const handlePresetChange = (key: PresetKey) => {
-    setApplyPreset(key);
-    setMinutesSavedPerEmployeePerMonth(PRESETS[key].minutesSavedPerEmployeePerMonth);
+  const applyPreset = (key: PresetKey) => {
+    setPreset(key);
+    setMinutesSavedPerEmployeePerMonth(
+      PRESETS[key].minutesSavedPerEmployeePerMonth
+    );
     setManagerHoursSavedPerMonth(PRESETS[key].managerHoursSavedPerMonth);
   };
 
   return (
-    <div className="min-h-screen w-full bg-white text-gray-900">
-      <div className="mx-auto max-w-6xl p-6 md:p-10">
-        <header className="mb-6 md:mb-10 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Factorial ROI Calculator</h1>
-            <p className="text-sm md:text-base text-gray-600 mt-2">Estimate payback, annual savings, and ROI when adopting Factorial for HR and people ops. Adjust the assumptions to match your org.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Select value={currency} onValueChange={setCurrency}>
-              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Currency" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="EUR">EUR (€)</SelectItem>
-                <SelectItem value="USD">USD ($)</SelectItem>
-                <SelectItem value="GBP">GBP (£)</SelectItem>
-                <SelectItem value="AUD">AUD (A$)</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex items-center gap-2">
-              <Label className="text-xs md:text-sm">Preset</Label>
-              <Select value={applyPreset} onValueChange={(v) => handlePresetChange(v as PresetKey)}>
-                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="conservative">Conservative</SelectItem>
-                  <SelectItem value="base">Base</SelectItem>
-                  <SelectItem value="aggressive">Aggressive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </header>
-
-        {/* Inputs grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="rounded-2xl shadow-sm">
-            <CardContent className="p-6 space-y-5">
-              <h2 className="text-lg font-medium">Team & Pricing</h2>
-              <div className="space-y-3">
-                <LabeledNumber label="Employees" value={employees} setValue={setEmployees} min={1} step={1} />
-                <LabeledNumber label={`Price / employee / month (${currency})`} value={pricePerEmployee} setValue={setPricePerEmployee} min={0} step={1} />
-                <LabeledNumber label={`One-time implementation (${currency})`} value={oneTimeImplementation} setValue={setOneTimeImplementation} min={0} step={100} />
-              </div>
-              <Divider />
-              <h3 className="text-sm font-medium text-gray-700">HR Admin Time</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <LabeledNumber label={`HR hourly cost (${currency})`} value={hrHourly} setValue={setHrHourly} min={0} step={1} />
-                <div>
-                  <Label className="text-sm">Minutes saved / employee / month</Label>
-                  <Slider value={[minutesSavedPerEmployeePerMonth]} onValueChange={(v) => setMinutesSavedPerEmployeePerMonth(v[0])} min={0} max={120} step={5} className="mt-3" />
-                  <div className="text-xs text-gray-600 mt-1">{minutesSavedPerEmployeePerMonth} min / employee / month</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl shadow-sm">
-            <CardContent className="p-6 space-y-5">
-              <h2 className="text-lg font-medium">Manager Time & Other Savings</h2>
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">Include manager time savings</Label>
-                <Switch checked={managersEnabled} onCheckedChange={setManagersEnabled} />
-              </div>
-              {managersEnabled && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <LabeledNumber label="Managers" value={managerCount} setValue={setManagerCount} min={0} step={1} />
-                  <LabeledNumber label={`Manager hourly cost (${currency})`} value={managerHourly} setValue={setManagerHourly} min={0} step={1} />
-                  <LabeledNumber label="Manager hours saved / month" value={managerHoursSavedPerMonth} setValue={setManagerHoursSavedPerMonth} min={0} step={0.5} />
-                </div>
-              )}
-              <Divider />
-              <LabeledNumber label={`Other savings (monthly) (${currency})`} value={otherSavingsMonthly} setValue={setOtherSavingsMonthly} min={0} step={50} help="Tool consolidation, error reduction, avoided fines, reduced overtime, etc." />
-              <div className="rounded-xl bg-gray-50 p-3 text-xs text-gray-600 flex gap-2"><Info className="w-4 h-4 mt-[2px]" />Adjust these to your reality. You can export figures below.</div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl shadow-sm">
-            <CardContent className="p-6 space-y-5">
-              <h2 className="text-lg font-medium">Summary</h2>
-              <SummaryRow label="Software cost (annual)">{fmt(annualSoftwareCost, currency)}</SummaryRow>
-              {oneTimeImplementation > 0 && (
-                <SummaryRow label="One-time implementation (Y1)">{fmt(oneTimeImplementation, currency)}</SummaryRow>
-              )}
-              <SummaryRow label="Total cost (Y1)"><strong>{fmt(annualTotalCostY1, currency)}</strong></SummaryRow>
-              <Divider />
-              <SummaryRow label="Admin savings (annual)">{fmt(adminSavingsMonthly * 12, currency)}</SummaryRow>
-              {managersEnabled && (
-                <SummaryRow label="Manager savings (annual)">{fmt(managerSavingsMonthly * 12, currency)}</SummaryRow>
-              )}
-              <SummaryRow label="Other savings (annual)">{fmt(otherSavingsMonthly * 12, currency)}</SummaryRow>
-              <SummaryRow label="Total savings (annual)"><strong>{fmt(totalSavingsAnnual, currency)}</strong></SummaryRow>
-              <Divider />
-              <SummaryRow label="Net benefit (Y1)"><strong>{fmt(netBenefitY1, currency)}</strong></SummaryRow>
-              <SummaryRow label="Net benefit (Y2+)"><strong>{fmt(netBenefitY2Plus, currency)}</strong></SummaryRow>
-              <SummaryRow label="ROI (Y1)"><strong>{Number.isFinite(roiY1) ? `${roiY1.toFixed(0)}%` : "—"}</strong></SummaryRow>
-              <SummaryRow label="ROI (Y2+)"><strong>{Number.isFinite(roiY2Plus) ? `${roiY2Plus.toFixed(0)}%` : "—"}</strong></SummaryRow>
-              <SummaryRow label="Payback period">
-                <strong>{Number.isFinite(paybackMonths) ? `${paybackMonths.toFixed(1)} months` : "> 24 months (adjust assumptions)"}</strong>
-              </SummaryRow>
-              <div className="pt-2 text-xs text-gray-600">Payback uses monthly savings vs monthly software cost and recovers any one-time cost.</div>
-            </CardContent>
-          </Card>
+    <div className="space-y-6">
+      {/* Controls */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Card 1 */}
+        <div className="card p-6 space-y-4">
+          <h2 className="text-lg font-medium">Team & Pricing</h2>
+          <SelectRow
+            label="Currency"
+            value={currency}
+            onChange={setCurrency}
+            options={["EUR", "USD", "GBP", "AUD"]}
+          />
+          <NumberRow
+            label="Employees"
+            value={employees}
+            onChange={setEmployees}
+            min={1}
+            step={1}
+          />
+          <NumberRow
+            label={`Price / employee / month (${currency})`}
+            value={pricePerEmployee}
+            onChange={setPricePerEmployee}
+            min={0}
+            step={1}
+          />
+          <NumberRow
+            label={`One-time implementation (${currency})`}
+            value={oneTimeImplementation}
+            onChange={setOneTimeImplementation}
+            min={0}
+            step={100}
+          />
+          <div className="divider" />
+          <h3 className="text-sm font-medium text-gray-700">HR Admin Time</h3>
+          <NumberRow
+            label={`HR hourly cost (${currency})`}
+            value={hrHourly}
+            onChange={setHrHourly}
+            min={0}
+            step={1}
+          />
+          <SliderRow
+            label="Minutes saved / employee / month"
+            value={minutesSavedPerEmployeePerMonth}
+            setValue={setMinutesSavedPerEmployeePerMonth}
+            min={0}
+            max={120}
+            step={5}
+            suffix="min"
+          />
         </div>
 
-        {/* Chart */}
-        <Card className="rounded-2xl shadow-sm mt-6">
-          <CardContent className="p-6">
-            <h3 className="text-base font-medium mb-4">Cost vs Savings (Annual)</h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <XAxis dataKey="name" hide />
-                  <YAxis tickFormatter={(v) => fmt(v, currency)} width={100} />
-                  <Tooltip formatter={(v: number) => fmt(v, currency)} />
-                  <Bar dataKey="value" radius={[10, 10, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Card 2 */}
+        <div className="card p-6 space-y-4">
+          <h2 className="text-lg font-medium">Manager Time & Other Savings</h2>
 
-        {/* Export */}
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button onClick={() => exportCSV({
-            currency,
-            employees,
-            pricePerEmployee,
-            oneTimeImplementation,
-            hrHourly,
-            minutesSavedPerEmployeePerMonth,
-            managersEnabled,
-            managerCount,
-            managerHourly,
-            managerHoursSavedPerMonth,
-            otherSavingsMonthly,
-            totals: {
-              annualSoftwareCost,
-              annualTotalCostY1,
-              totalSavingsAnnual,
-              netBenefitY1,
-              netBenefitY2Plus,
-              roiY1,
-              roiY2Plus,
-              paybackMonths,
-            }
-          })}>Export CSV</Button>
+          <ToggleRow
+            label="Include manager time savings"
+            checked={managersEnabled}
+            onToggle={() => setManagersEnabled((s) => !s)}
+          />
+
+          {managersEnabled && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <NumberRow
+                label="Managers"
+                value={managerCount}
+                onChange={setManagerCount}
+                min={0}
+                step={1}
+              />
+              <NumberRow
+                label={`Manager hourly cost (${currency})`}
+                value={managerHourly}
+                onChange={setManagerHourly}
+                min={0}
+                step={1}
+              />
+              <NumberRow
+                label="Manager hours saved / month"
+                value={managerHoursSavedPerMonth}
+                onChange={setManagerHoursSavedPerMonth}
+                min={0}
+                step={0.5}
+              />
+            </div>
+          )}
+
+          <NumberRow
+            label={`Other savings (monthly) (${currency})`}
+            value={otherSavingsMonthly}
+            onChange={setOtherSavingsMonthly}
+            min={0}
+            step={50}
+            hint="Tool consolidation, error reduction, avoided fines, reduced overtime, etc."
+          />
+
+          <PresetRow preset={preset} onChange={applyPreset} />
         </div>
 
-        <footer className="mt-10 text-xs text-gray-500">
-          Built for Factorial by your ROI wizard. Assumptions are illustrative—replace with your data.
-        </footer>
+        {/* Card 3 */}
+        <div className="card p-6 space-y-3">
+          <h2 className="text-lg font-medium">Summary</h2>
+
+          <SummaryRow label="Software cost (annual)">
+            {fmt(annualSoftwareCost, currency)}
+          </SummaryRow>
+
+          {oneTimeImplementation > 0 && (
+            <SummaryRow label="One-time implementation (Y1)">
+              {fmt(oneTimeImplementation, currency)}
+            </SummaryRow>
+          )}
+
+          <SummaryRow label="Total cost (Y1)">
+            <strong>{fmt(annualTotalCostY1, currency)}</strong>
+          </SummaryRow>
+
+          <div className="divider" />
+
+          <SummaryRow label="Admin savings (annual)">
+            {fmt(adminSavingsMonthly * 12, currency)}
+          </SummaryRow>
+
+          {managersEnabled && (
+            <SummaryRow label="Manager savings (annual)">
+              {fmt(managerSavingsMonthly * 12, currency)}
+            </SummaryRow>
+          )}
+
+          <SummaryRow label="Other savings (annual)">
+            {fmt(otherSavingsMonthly * 12, currency)}
+          </SummaryRow>
+
+          <SummaryRow label="Total savings (annual)">
+            <strong>{fmt(totalSavingsAnnual, currency)}</strong>
+          </SummaryRow>
+
+          <div className="divider" />
+
+          <SummaryRow label="Net benefit (Y1)">
+            <strong>{fmt(netBenefitY1, currency)}</strong>
+          </SummaryRow>
+
+          <SummaryRow label="Net benefit (Y2+)">
+            <strong>{fmt(netBenefitY2Plus, currency)}</strong>
+          </SummaryRow>
+
+          <SummaryRow label="ROI (Y1)">
+            <strong>
+              {Number.isFinite(roiY1) ? `${roiY1.toFixed(0)}%` : "—"}
+            </strong>
+          </SummaryRow>
+
+          <SummaryRow label="ROI (Y2+)">
+            <strong>
+              {Number.isFinite(roiY2Plus) ? `${roiY2Plus.toFixed(0)}%` : "—"}
+            </strong>
+          </SummaryRow>
+
+          <SummaryRow label="Payback period">
+            <strong>
+              {Number.isFinite(paybackMonths)
+                ? `${paybackMonths.toFixed(1)} months`
+                : "> 24 months (adjust assumptions)"}
+            </strong>
+          </SummaryRow>
+        </div>
+      </div>
+
+      {/* Chart */}
+      <div className="card p-6">
+        <h3 className="text-base font-medium mb-4">Cost vs Savings (Annual)</h3>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData}>
+              <XAxis dataKey="name" hide />
+              <YAxis tickFormatter={(v) => fmt(v, currency)} width={100} />
+              <Tooltip formatter={(v: number) => fmt(v, currency)} />
+              <Bar dataKey="value" radius={[10, 10, 0, 0]} fill="var(--brand-primary)" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Export */}
+      <div className="flex flex-wrap gap-3">
+        <button className="btn" onClick={() => exportCSV({
+          currency,
+          employees,
+          pricePerEmployee,
+          oneTimeImplementation,
+          hrHourly,
+          minutesSavedPerEmployeePerMonth,
+          managersEnabled,
+          managerCount,
+          managerHourly,
+          managerHoursSavedPerMonth,
+          otherSavingsMonthly,
+          totals: {
+            annualSoftwareCost,
+            annualTotalCostY1,
+            totalSavingsAnnual,
+            netBenefitY1,
+            netBenefitY2Plus,
+            roiY1,
+            roiY2Plus,
+            paybackMonths,
+          }
+        })}>
+          Export CSV
+        </button>
       </div>
     </div>
   );
 }
 
-function LabeledNumber({ label, value, setValue, min = 0, step = 1, help }: { label: string; value: number; setValue: (v: number) => void; min?: number; step?: number; help?: string; }) {
-  return (
-    <div className="space-y-2">
-      <Label className="text-sm">{label}</Label>
-      <Input type="number" value={Number.isFinite(value) ? value : 0} onChange={(e) => setValue(Number(e.target.value))} min={min} step={step} className="text-right" />
-      {help && <div className="text-xs text-gray-500">{help}</div>}
-    </div>
-  );
-}
+/* ------------- UI bits (plain Tailwind) ------------- */
 
 function SummaryRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -261,9 +370,140 @@ function SummaryRow({ label, children }: { label: string; children: React.ReactN
   );
 }
 
-function Divider() {
-  return <div className="h-px bg-gray-200 my-1" />;
+function NumberRow({
+  label, value, onChange, min = 0, step = 1, hint,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  step?: number;
+  hint?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="label">{label}</label>
+      <input
+        type="number"
+        className="input"
+        value={Number.isFinite(value) ? value : 0}
+        onChange={(e) => onChange(Number(e.target.value))}
+        min={min}
+        step={step}
+      />
+      {hint && <div className="text-xs text-gray-500">{hint}</div>}
+    </div>
+  );
 }
+
+function SelectRow({
+  label, value, onChange, options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="label">{label}</label>
+      <select
+        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-left
+                   focus:outline-none focus:ring-2 focus:ring-[var(--brand-secondary)]"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {options.map((opt) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function ToggleRow({
+  label, checked, onToggle,
+}: {
+  label: string;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="label">{label}</span>
+      <button
+        onClick={onToggle}
+        className={`h-6 w-11 rounded-full transition
+          ${checked ? "bg-[var(--brand-secondary)]" : "bg-gray-300"}`}
+        role="switch"
+        aria-checked={checked}
+      >
+        <span
+          className={`block h-5 w-5 rounded-full bg-white shadow
+            transform transition translate-y-0.5
+            ${checked ? "translate-x-6" : "translate-x-0.5"}`}
+        />
+      </button>
+    </div>
+  );
+}
+
+function SliderRow({
+  label, value, setValue, min = 0, max = 100, step = 1, suffix = "",
+}: {
+  label: string;
+  value: number;
+  setValue: (v: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+  suffix?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="label">{label}</label>
+      <input
+        type="range"
+        className="w-full accent-[var(--brand-secondary)]"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => setValue(Number(e.target.value))}
+      />
+      <div className="text-xs text-gray-600">{value} {suffix}</div>
+    </div>
+  );
+}
+
+function PresetRow({
+  preset, onChange,
+}: {
+  preset: PresetKey;
+  onChange: (key: PresetKey) => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="label">Preset</label>
+      <div className="flex gap-2">
+        {(["conservative","base","aggressive"] as PresetKey[]).map((p) => (
+          <button
+            key={p}
+            className={`rounded-xl px-3 py-1 text-sm border transition
+              ${preset === p
+                ? "bg-[var(--brand-secondary)]/10 text-[var(--brand-secondary)] border-[var(--brand-secondary)]/30"
+                : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}
+            onClick={() => onChange(p)}
+          >
+            {p[0].toUpperCase() + p.slice(1)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ------------- CSV export ------------- */
 
 function exportCSV(data: any) {
   const rows: Array<[string, string]> = [
