@@ -2,10 +2,9 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Fira_Sans } from "next/font/google";
 
-// ✅ Add explicit weights
 const fira = Fira_Sans({
   subsets: ["latin"],
-  weight: ["400", "600"],   // regular + semibold
+  weight: ["400", "600"],
   display: "swap",
   variable: "--font-fira",
 });
@@ -13,6 +12,9 @@ const fira = Fira_Sans({
 export const metadata: Metadata = {
   title: "Factorial ROI Calculator",
   description: "Estimate payback, savings and ROI for Factorial HR.",
+  icons: {
+    icon: "/favicon.jpg", // ✅ your jpeg favicon
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
