@@ -153,6 +153,8 @@ export default function FactorialRoiCalculator() {
   );
 }
 
+/* ---------- Small UI helpers (plain Tailwind) ---------- */
+
 function SummaryRow({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="flex items-center justify-between text-sm py-1"><span className="text-gray-600">{label}</span><span>{children}</span></div>;
 }
@@ -199,6 +201,30 @@ function SliderRow({ label, value, setValue, min = 0, max = 100, step = 1, suffi
   );
 }
 
+function PresetRow({ preset, onChange }: { preset: PresetKey; onChange: (key: PresetKey) => void; }) {
+  return (
+    <div className="space-y-1">
+      <label className="label">Preset</label>
+      <div className="flex gap-2">
+        {(["conservative","base","aggressive"] as PresetKey[]).map((p) => (
+          <button
+            key={p}
+            className={`rounded-xl px-3 py-1 text-sm border transition
+              ${preset === p
+                ? "bg-[var(--brand-secondary)]/10 text-[var(--brand-secondary)] border-[var(--brand-secondary)]/30"
+                : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}
+            onClick={() => onChange(p)}
+          >
+            {p[0].toUpperCase() + p.slice(1)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- CSV export helpers ---------------- */
+
 function exportCSV(data: any) {
   const rows: Array<[string, string]> = [
     ["Currency", data.currency],
@@ -234,4 +260,8 @@ function exportCSV(data: any) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-function escapeCsv(v: string) { const s = String(v ?? ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+
+function escapeCsv(v: string) {
+  const s = String(v ?? "");
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
