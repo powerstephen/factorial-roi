@@ -107,7 +107,7 @@ export default function FactorialRoiCalculator() {
           <SummaryRow label="Net benefit (Y1)"><strong>{fmt(netBenefitY1, currency)}</strong></SummaryRow>
           <SummaryRow label="Net benefit (Y2+)"><strong>{fmt(netBenefitY2, currency)}</strong></SummaryRow>
           <SummaryRow label="ROI (Y1)"><strong>{Number.isFinite(roiY1) ? `${roiY1.toFixed(0)}%` : "—"}</strong></SummaryRow>
-          <SummaryRow label="ROI (Y2+)"><strong>{Number.isFinite(roiY2) ? `${roiY2.toFixed(0)}%` : "—"}</strong></SummaryRow>
+          <SummaryRow label="ROI (Y2+)"><strong>{Number.isFinite(roiY2) ? `${roiY2.toFixed(0)}%` : "—"}</SummaryRow>
           <SummaryRow label="Payback period"><strong>{Number.isFinite(paybackMonths) ? `${paybackMonths.toFixed(1)} months` : "> 24 months (adjust assumptions)"}</strong></SummaryRow>
         </div>
       </div>
