@@ -8,19 +8,17 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-fira)", "ui-sans-serif", "system-ui"],
+        sans: ["var(--font-fira)", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       colors: {
         factorial: {
-          red: "#E51943",      // Radical Red (Factorial primary)
-          green: "#009698",    // Viridian Green (secondary)
-          // optional neutrals you can lean on:
+          red: "#E51943",
+          green: "#009698",
           ink: "#111827",
           mist: "#F9FAFB",
         },
       },
       borderRadius: {
-        xl: "1rem",
         "2xl": "1.25rem",
       },
       boxShadow: {
