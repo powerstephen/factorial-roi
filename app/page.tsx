@@ -1,9 +1,8 @@
 import dynamic from "next/dynamic";
 
-// Recharts prefers client-side rendering
 const FactorialRoiCalculator = dynamic(
   () => import("../components/FactorialRoiCalculator"),
-  { ssr: false }
+  { ssr: false } // Recharts renders on client
 );
 
 export default function Page() {
