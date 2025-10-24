@@ -15,8 +15,8 @@ const fmt = (n: number, currency: string) =>
 
 const PRESETS = {
   conservative: { minutesSavedPerEmployeePerMonth: 20, managerHoursSavedPerMonth: 1 },
-  base: { minutesSavedPerEmployeePerMonth: 40, managerHoursSavedPerMonth: 2 },
-  aggressive: { minutesSavedPerEmployeePerMonth: 60, managerHoursSavedPerMonth: 4 },
+  base:         { minutesSavedPerEmployeePerMonth: 40, managerHoursSavedPerMonth: 2 },
+  aggressive:   { minutesSavedPerEmployeePerMonth: 60, managerHoursSavedPerMonth: 4 },
 } as const;
 type PresetKey = keyof typeof PRESETS;
 
@@ -39,6 +39,7 @@ export default function FactorialRoiCalculator() {
   const [otherSavingsMonthly, setOtherSavingsMonthly] = useState<number>(600);
   const [preset, setPreset] = useState<PresetKey>("base");
 
+  // Costs
   const monthlySoftwareCost = useMemo(
     () => employees * pricePerEmployee,
     [employees, pricePerEmployee]
@@ -52,6 +53,7 @@ export default function FactorialRoiCalculator() {
     [annualSoftwareCost, oneTimeImplementation]
   );
 
+  // Savings
   const adminHoursSavedPerMonth = useMemo(
     () => (minutesSavedPerEmployeePerMonth / 60) * employees,
     [minutesSavedPerEmployeePerMonth, employees]
@@ -66,12 +68,7 @@ export default function FactorialRoiCalculator() {
       managersEnabled
         ? managerCount * managerHoursSavedPerMonth * managerHourly
         : 0,
-    [
-      managersEnabled,
-      managerCount,
-      managerHoursSavedPerMonth,
-      managerHourly,
-    ]
+    [managersEnabled, managerCount, managerHoursSavedPerMonth, managerHourly]
   );
 
   const totalSavingsMonthly = useMemo(
@@ -83,6 +80,7 @@ export default function FactorialRoiCalculator() {
     [totalSavingsMonthly]
   );
 
+  // Results
   const netBenefitY1 = useMemo(
     () => totalSavingsAnnual - annualTotalCostY1,
     [totalSavingsAnnual, annualTotalCostY1]
@@ -91,21 +89,19 @@ export default function FactorialRoiCalculator() {
     () => totalSavingsAnnual - annualSoftwareCost,
     [totalSavingsAnnual, annualSoftwareCost]
   );
+
   const roiY1 = useMemo(
     () =>
-      annualTotalCostY1 === 0
-        ? 0
-        : (netBenefitY1 / annualTotalCostY1) * 100,
+      annualTotalCostY1 === 0 ? 0 : (netBenefitY1 / annualTotalCostY1) * 100,
     [netBenefitY1, annualTotalCostY1]
   );
   const roiY2 = useMemo(
     () =>
-      annualSoftwareCost === 0
-        ? 0
-        : (netBenefitY2 / annualSoftwareCost) * 100,
+      annualSoftwareCost === 0 ? 0 : (netBenefitY2 / annualSoftwareCost) * 100,
     [netBenefitY2, annualSoftwareCost]
   );
 
+  // Payback
   const paybackMonths = useMemo(() => {
     const monthlyNet = totalSavingsMonthly - monthlySoftwareCost;
     if (monthlyNet <= 0) return Infinity;
@@ -140,6 +136,7 @@ export default function FactorialRoiCalculator() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Card 1 */}
         <div className="card p-6 space-y-4">
           <h2 className="text-lg font-medium">Team & Pricing</h2>
           <SelectRow
@@ -189,6 +186,7 @@ export default function FactorialRoiCalculator() {
           />
         </div>
 
+        {/* Card 2 */}
         <div className="card p-6 space-y-4">
           <h2 className="text-lg font-medium">Manager Time & Other Savings</h2>
           <ToggleRow
@@ -229,9 +227,11 @@ export default function FactorialRoiCalculator() {
             step={50}
             hint="Tool consolidation, error reduction, avoided fines, reduced overtime, etc."
           />
+          {/* ✅ This helper exists below */}
           <PresetRow preset={preset} onChange={applyPreset} />
         </div>
 
+        {/* Card 3 */}
         <div className="card p-6 space-y-3">
           <h2 className="text-lg font-medium">Summary</h2>
           <SummaryRow label="Software cost (annual)">
@@ -287,6 +287,7 @@ export default function FactorialRoiCalculator() {
         </div>
       </div>
 
+      {/* Chart */}
       <div className="card p-6">
         <h3 className="text-base font-medium mb-4">Cost vs Savings (Annual)</h3>
         <div className="h-64">
@@ -295,16 +296,13 @@ export default function FactorialRoiCalculator() {
               <XAxis dataKey="name" hide />
               <YAxis tickFormatter={(v) => fmt(v, currency)} width={100} />
               <Tooltip formatter={(v: number) => fmt(v, currency)} />
-              <Bar
-                dataKey="value"
-                radius={[10, 10, 0, 0]}
-                fill="var(--brand-primary)"
-              />
+              <Bar dataKey="value" radius={[10, 10, 0, 0]} fill="var(--brand-primary)" />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
+      {/* Export */}
       <div className="flex flex-wrap gap-3">
         <button
           className="btn"
@@ -484,8 +482,7 @@ function SliderRow({
   );
 }
 
-/* ---------------- Preset row ---------------- */
-
+/* ---------------- Preset row (the missing helper) ---------------- */
 function PresetRow({
   preset,
   onChange,
@@ -544,3 +541,25 @@ function exportCSV(data: any) {
       String(
         Number.isFinite(data.totals.paybackMonths)
           ? data.totals.paybackMonths.toFixed(1)
+          : ">24"
+      ),
+    ],
+  ];
+
+  const header = "Metric,Value";
+  const csv = [header, ...rows.map(([k, v]) => `${escapeCsv(k)},${escapeCsv(v)}`)].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "factorial-roi.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function escapeCsv(v: string) {
+  const s = String(v ?? "");
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
