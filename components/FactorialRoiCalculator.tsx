@@ -6,13 +6,6 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recha
 const fmt = (n: number, currency: string) =>
   new Intl.NumberFormat(undefined, { style: "currency", currency }).format(n);
 
-const PRESETS = {
-  conservative: { minutesSavedPerEmployeePerMonth: 20, managerHoursSavedPerMonth: 1 },
-  base:         { minutesSavedPerEmployeePerMonth: 40, managerHoursSavedPerMonth: 2 },
-  aggressive:   { minutesSavedPerEmployeePerMonth: 60, managerHoursSavedPerMonth: 4 },
-} as const;
-type PresetKey = keyof typeof PRESETS;
-
 export default function FactorialRoiCalculator() {
   const [currency, setCurrency] = useState<string>("EUR");
   const [employees, setEmployees] = useState<number>(150);
@@ -20,22 +13,21 @@ export default function FactorialRoiCalculator() {
   const [oneTimeImplementation, setOneTimeImplementation] = useState<number>(0);
 
   const [hrHourly, setHrHourly] = useState<number>(35);
-  const [minutesSavedPerEmployeePerMonth, setMinutesSavedPerEmployeePerMonth] =
-    useState<number>(PRESETS.base.minutesSavedPerEmployeePerMonth);
+  const [minutesSavedPerEmployeePerMonth, setMinutesSavedPerEmployeePerMonth] = useState<number>(40);
 
   const [managersEnabled, setManagersEnabled] = useState<boolean>(true);
   const [managerCount, setManagerCount] = useState<number>(12);
   const [managerHourly, setManagerHourly] = useState<number>(45);
-  const [managerHoursSavedPerMonth, setManagerHoursSavedPerMonth] =
-    useState<number>(PRESETS.base.managerHoursSavedPerMonth);
+  const [managerHoursSavedPerMonth, setManagerHoursSavedPerMonth] = useState<number>(2);
 
   const [otherSavingsMonthly, setOtherSavingsMonthly] = useState<number>(600);
-  const [preset, setPreset] = useState<PresetKey>("base");
 
+  // Costs
   const monthlySoftwareCost = useMemo(() => employees * pricePerEmployee, [employees, pricePerEmployee]);
   const annualSoftwareCost  = useMemo(() => monthlySoftwareCost * 12, [monthlySoftwareCost]);
   const annualTotalCostY1   = useMemo(() => annualSoftwareCost + oneTimeImplementation, [annualSoftwareCost, oneTimeImplementation]);
 
+  // Savings
   const adminHoursSavedPerMonth = useMemo(
     () => (minutesSavedPerEmployeePerMonth / 60) * employees,
     [minutesSavedPerEmployeePerMonth, employees]
@@ -53,11 +45,14 @@ export default function FactorialRoiCalculator() {
   );
   const totalSavingsAnnual = useMemo(() => totalSavingsMonthly * 12, [totalSavingsMonthly]);
 
+  // Results
   const netBenefitY1 = useMemo(() => totalSavingsAnnual - annualTotalCostY1, [totalSavingsAnnual, annualTotalCostY1]);
   const netBenefitY2 = useMemo(() => totalSavingsAnnual - annualSoftwareCost, [totalSavingsAnnual, annualSoftwareCost]);
-  const roiY1        = useMemo(() => (annualTotalCostY1 === 0 ? 0 : (netBenefitY1 / annualTotalCostY1) * 100), [netBenefitY1, annualTotalCostY1]);
-  const roiY2        = useMemo(() => (annualSoftwareCost  === 0 ? 0 : (netBenefitY2  / annualSoftwareCost ) * 100), [netBenefitY2,  annualSoftwareCost]);
 
+  const roiY1 = useMemo(() => (annualTotalCostY1 === 0 ? 0 : (netBenefitY1 / annualTotalCostY1) * 100), [netBenefitY1, annualTotalCostY1]);
+  const roiY2 = useMemo(() => (annualSoftwareCost  === 0 ? 0 : (netBenefitY2  / annualSoftwareCost ) * 100), [netBenefitY2,  annualSoftwareCost]);
+
+  // Payback
   const paybackMonths = useMemo(() => {
     const monthlyNet = totalSavingsMonthly - monthlySoftwareCost;
     if (monthlyNet <= 0) return Infinity;
@@ -69,12 +64,6 @@ export default function FactorialRoiCalculator() {
     { name: "Annual Cost (Y1)", value: annualTotalCostY1 },
     { name: "Annual Cost (Y2+)", value: annualSoftwareCost },
   ], [totalSavingsAnnual, annualTotalCostY1, annualSoftwareCost]);
-
-  const applyPreset = (key: PresetKey) => {
-    setPreset(key);
-    setMinutesSavedPerEmployeePerMonth(PRESETS[key].minutesSavedPerEmployeePerMonth);
-    setManagerHoursSavedPerMonth(PRESETS[key].managerHoursSavedPerMonth);
-  };
 
   return (
     <div className="space-y-6">
@@ -102,7 +91,6 @@ export default function FactorialRoiCalculator() {
             </div>
           )}
           <NumberRow label={`Other savings (monthly) (${currency})`} value={otherSavingsMonthly} onChange={setOtherSavingsMonthly} min={0} step={50} hint="Tool consolidation, error reduction, avoided fines, reduced overtime, etc." />
-          <PresetRow preset={preset} onChange={applyPreset} />
         </div>
 
         <div className="card p-6 space-y-3">
@@ -174,53 +162,6 @@ function SelectRow({ label, value, onChange, options }: { label: string; value: 
       <select className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-left focus:outline-none focus:ring-2 focus:ring-[var(--brand-secondary)]" value={value} onChange={(e) => onChange(e.target.value)}>
         {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
       </select>
-    </div>
-  );
-}
-
-function ToggleRow({ label, checked, onToggle }: { label: string; checked: boolean; onToggle: () => void; }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="label">{label}</span>
-      <button onClick={onToggle} className={`h-6 w-11 rounded-full transition ${checked ? "bg-[var(--brand-secondary)]" : "bg-gray-300"}`} role="switch" aria-checked={checked}>
-        <span className={`block h-5 w-5 rounded-full bg-white shadow transform transition translate-y-0.5 ${checked ? "translate-x-6" : "translate-x-0.5"}`} />
-      </button>
-    </div>
-  );
-}
-
-function SliderRow({ label, value, setValue, min = 0, max = 100, step = 1, suffix = "" }: { label: string; value: number; setValue: (v: number) => void; min?: number; max?: number; step?: number; suffix?: string; }) {
-  return (
-    <div className="space-y-1">
-      <label className="label">{label}</label>
-      <input type="range" className="w-full accent-[var(--brand-secondary)]" min={min} max={max} step={step} value={value} onChange={(e) => setValue(Number(e.target.value))} />
-      <div className="text-xs text-gray-600">{value} {suffix}</div>
-    </div>
-  );
-}
-
-/* ---------- PresetRow (included) ---------- */
-function PresetRow({ preset, onChange }: { preset: PresetKey; onChange: (key: PresetKey) => void; }) {
-  const options: PresetKey[] = ["conservative", "base", "aggressive"];
-  return (
-    <div className="space-y-1">
-      <label className="label">Preset</label>
-      <div className="flex gap-2">
-        {options.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onChange(p)}
-            className={`rounded-xl px-3 py-1 text-sm border transition ${
-              preset === p
-                ? "bg-[var(--brand-secondary)]/10 text-[var(--brand-secondary)] border-[var(--brand-secondary)]/30"
-                : "border-gray-200 text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            {p[0].toUpperCase() + p.slice(1)}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
